@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auth, companies, jobs
+from routers import auth, companies, jobs, resumes, certificates
 
 app = FastAPI(
     title="CareerHub API",
@@ -20,6 +20,8 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(companies.router, prefix="/api/v1/companies", tags=["companies"])
 app.include_router(jobs.router, prefix="/api/v1/jobs", tags=["jobs"])
+app.include_router(resumes.router, prefix="/api/v1/resumes", tags=["resumes"])
+app.include_router(certificates.router, prefix="/api/v1/certificates", tags=["certificates"])
 
 @app.get("/")
 def read_root():

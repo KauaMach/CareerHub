@@ -95,3 +95,59 @@ class JobResponse(JobBase):
 
     class Config:
         from_attributes = True
+
+class ResumeBase(BaseModel):
+    title: str
+    target_role: str | None = None
+    content: dict | list | None = None
+    is_default: bool = False
+
+class ResumeCreate(ResumeBase):
+    pass
+
+class ResumeUpdate(BaseModel):
+    title: str | None = None
+    target_role: str | None = None
+    content: dict | list | None = None
+    is_default: bool | None = None
+
+class ResumeResponse(ResumeBase):
+    id: UUID
+    user_id: UUID
+    created_at: datetime
+    updated_at: datetime | None
+
+    class Config:
+        from_attributes = True
+
+class CertificateBase(BaseModel):
+    title: str
+    institution: str | None = None
+    category: str | None = None
+    issue_date: datetime | None = None
+    expiry_date: datetime | None = None
+    credential_id: str | None = None
+    credential_url: str | None = None
+    file_url: str | None = None
+
+class CertificateCreate(CertificateBase):
+    pass
+
+class CertificateUpdate(BaseModel):
+    title: str | None = None
+    institution: str | None = None
+    category: str | None = None
+    issue_date: datetime | None = None
+    expiry_date: datetime | None = None
+    credential_id: str | None = None
+    credential_url: str | None = None
+    file_url: str | None = None
+
+class CertificateResponse(CertificateBase):
+    id: UUID
+    user_id: UUID
+    created_at: datetime
+    updated_at: datetime | None
+
+    class Config:
+        from_attributes = True

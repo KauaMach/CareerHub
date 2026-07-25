@@ -1,5 +1,6 @@
-import { api } from "@/lib/api";
 "use client";
+
+import { api } from "@/lib/api";
 
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Award, Calendar, Link as LinkIcon, Loader2, ArrowRight } from "lucide-react";

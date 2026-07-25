@@ -1,5 +1,6 @@
-import { api } from "@/lib/api";
 "use client";
+
+import { api } from "@/lib/api";
 
 import Link from "next/link";
 import { Briefcase, FileText, ArrowRight, BarChart3, TrendingUp, Activity, CheckCircle2 } from "lucide-react";
@@ -58,7 +59,7 @@ export default function DashboardPage() {
 
   const statusOrder = ["BACKLOG", "APPLIED", "INTERVIEW", "OFFER", "REJECTED"];
   const maxStatusCount = metrics && Object.keys(metrics.pipeline).length > 0
-    ? Math.max(...Object.values(metrics.pipeline).concat(1)) 
+    ? Math.max(...Object.values(metrics.pipeline).concat(1))
     : 1;
 
   const totalInterviews = metrics?.pipeline["INTERVIEW"] || 0;
@@ -68,7 +69,7 @@ export default function DashboardPage() {
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Olá, {userName} 👋</h1>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Olá, {userName}</h1>
         <p className="text-muted-foreground text-lg">
           Aqui está o resumo da sua evolução profissional.
         </p>
@@ -125,13 +126,13 @@ export default function DashboardPage() {
                   <BarChart3 size={20} className="text-primary" /> Funil de Candidaturas
                 </h2>
               </div>
-              
+
               <div className="space-y-6">
                 {statusOrder.map((status) => {
                   const count = metrics?.pipeline[status] || 0;
                   const percent = Math.round((count / maxStatusCount) * 100);
                   const config = statusConfig[status];
-                  
+
                   return (
                     <div key={status} className="flex flex-col gap-2">
                       <div className="flex justify-between text-sm font-medium">
@@ -139,18 +140,18 @@ export default function DashboardPage() {
                         <span className="text-muted-foreground">{count} vaga(s)</span>
                       </div>
                       <div className={`h-3 w-full rounded-full ${config?.w || 'bg-slate-100'}`}>
-                        <div 
-                          className={`h-full rounded-full transition-all duration-1000 ease-out ${config?.color || 'bg-slate-500'}`} 
+                        <div
+                          className={`h-full rounded-full transition-all duration-1000 ease-out ${config?.color || 'bg-slate-500'}`}
                           style={{ width: `${percent}%` }}
                         />
                       </div>
                     </div>
                   );
                 })}
-                
+
                 {metrics?.summary.jobs === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
-                    Você ainda não cadastrou nenhuma vaga. <br/>
+                    Você ainda não cadastrou nenhuma vaga. <br />
                     Comece a usar o Kanban para ver seu funil.
                   </div>
                 )}

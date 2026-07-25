@@ -1,5 +1,6 @@
-import { api } from "@/lib/api";
 "use client";
+
+import { api } from "@/lib/api";
 
 import { useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -224,7 +225,11 @@ export default function JobDetailPage() {
                     control={control}
                     render={({ field }) => (
                       <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="font-semibold"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="font-semibold">
+                          <SelectValue placeholder="Selecione o status">
+                            {STATUSES.find(s => s.id === field.value)?.label || "Selecione o status"}
+                          </SelectValue>
+                        </SelectTrigger>
                         <SelectContent>
                           {STATUSES.map(s => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
                         </SelectContent>

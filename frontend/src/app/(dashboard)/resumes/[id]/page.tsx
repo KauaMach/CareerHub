@@ -1,5 +1,6 @@
-import { api } from "@/lib/api";
 "use client";
+
+import { api } from "@/lib/api";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useParams } from "next/navigation";

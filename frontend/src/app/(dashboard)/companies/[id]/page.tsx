@@ -1,5 +1,6 @@
-import { api } from "@/lib/api";
 "use client";
+
+import { api } from "@/lib/api";
 
 import { useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";

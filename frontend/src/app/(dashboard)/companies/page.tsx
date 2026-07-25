@@ -1,5 +1,6 @@
-import { api } from "@/lib/api";
 "use client";
+
+import { api } from "@/lib/api";
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -29,17 +30,37 @@ export default function CompaniesPage() {
       if (!res.ok) throw new Error("Failed to fetch companies");
       return res.json();
     }
-  });  return (
+  });
+
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredCompanies = companies.filter((company) => {
+    const term = searchQuery.toLowerCase();
+    const nameMatch = company.name.toLowerCase().includes(term);
+    const industryMatch = company.industry?.toLowerCase().includes(term);
+    return nameMatch || industryMatch;
+  });
+
+  return (
     <div className="h-full flex flex-col p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Empresas</h1>
           <p className="text-muted-foreground mt-1">Mapeie suas empresas alvo e faça networking direcionado.</p>
         </div>
-        <Link href="/companies/new" className="shrink-0 flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full font-medium hover:bg-primary/90 transition-all shadow-sm">
-          <Plus className="h-4 w-4" />
-          Nova Empresa
-        </Link>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <input 
+            type="search" 
+            placeholder="Buscar por empresa ou setor..." 
+            className="flex h-10 w-full sm:w-64 rounded-full border border-input bg-background px-4 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <Link href="/companies/new" className="shrink-0 flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full font-medium hover:bg-primary/90 transition-all shadow-sm">
+            <Plus className="h-4 w-4" />
+            Nova Empresa
+          </Link>
+        </div>
       </div>
 
       {loading ? (
@@ -61,7 +82,7 @@ export default function CompaniesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {companies.map((company) => (
+          {filteredCompanies.map((company) => (
             <Link 
               key={company.id}
               href={`/companies/${company.id}`}

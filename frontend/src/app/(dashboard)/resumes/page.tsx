@@ -1,26 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, FileText, Star, Loader2, MoreVertical, CheckCircle2, Target } from "lucide-react";
+import Link from "next/link";
+import { Plus, FileText, Star, Loader2, Edit3, Trash2, CheckCircle2, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogFooter 
-} from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter
-} from "@/components/ui/sheet";
 
 interface Resume {
   id: string;
@@ -34,15 +17,6 @@ interface Resume {
 export default function ResumesPage() {
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Create Modal
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
-
-  // Details Sheet
-  const [selectedResume, setSelectedResume] = useState<Resume | null>(null);
-  const [isUpdating, setIsUpdating] = useState(false);
 
   const fetchResumes = async () => {
     try {
@@ -65,68 +39,19 @@ export default function ResumesPage() {
     fetchResumes();
   }, []);
 
-  const handleCreateResume = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setError("");
-
-    const formData = new FormData(e.currentTarget);
+    if (!confirm("Tem certeza que deseja excluir este currículo?")) return;
     
-    const payload: Record<string, any> = {
-      title: formData.get("title"),
-      target_role: formData.get("target_role") || null,
-      is_default: resumes.length === 0 ? true : false, // First one is default
-    };
-
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:8000/api/v1/resumes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify(payload)
+      await fetch(`http://localhost:8000/api/v1/resumes/${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
       });
-
-      if (!res.ok) throw new Error("Erro ao criar currículo");
-
-      setIsModalOpen(false);
-      fetchResumes();
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleUpdateResume = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!selectedResume) return;
-    setIsUpdating(true);
-
-    const formData = new FormData(e.currentTarget);
-    const textContent = formData.get("content");
-    
-    const payload: Record<string, any> = {
-      title: formData.get("title"),
-      target_role: formData.get("target_role") || null,
-      content: textContent ? { text: textContent } : null, // Wrapping in JSON for now
-    };
-
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:8000/api/v1/resumes/${selectedResume.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) throw new Error("Erro ao atualizar currículo");
-
-      setSelectedResume(null);
       fetchResumes();
     } catch (err) {
-      console.error(err);
-    } finally {
-      setIsUpdating(false);
+      alert("Erro ao excluir currículo.");
     }
   };
 
@@ -158,10 +83,10 @@ export default function ResumesPage() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Currículos</h1>
           <p className="text-muted-foreground mt-1">Gerencie suas versões de currículo para maximizar o Match Score.</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="shrink-0 rounded-full px-6 shadow-sm">
-          <Plus className="mr-2 h-4 w-4" />
+        <Link href="/resumes/new" className="shrink-0 flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full font-medium hover:bg-primary/90 transition-all shadow-sm">
+          <Plus className="h-4 w-4" />
           Nova Versão
-        </Button>
+        </Link>
       </div>
 
       {loading ? (
@@ -175,19 +100,18 @@ export default function ResumesPage() {
           </div>
           <h3 className="text-xl font-bold mb-2">Nenhum currículo cadastrado</h3>
           <p className="text-muted-foreground max-w-sm mb-6">
-            Crie versões do seu currículo (ex: Focado em Frontend, Focado em Gestão) para vincular às vagas e medir sua conversão.
+            Crie versões do seu currículo estruturado para vincular às vagas e permitir que a IA meça sua aderência.
           </p>
-          <Button onClick={() => setIsModalOpen(true)}>
+          <Link href="/resumes/new" className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-md font-medium hover:bg-primary/90 transition-all">
             <Plus className="mr-2 h-4 w-4" /> Criar Primeiro Currículo
-          </Button>
+          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {resumes.map((resume) => (
             <div 
               key={resume.id}
-              onClick={() => setSelectedResume(resume)}
-              className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-lg hover:border-primary/30 transition-all cursor-pointer group flex flex-col relative overflow-hidden"
+              className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-lg hover:border-primary/30 transition-all group flex flex-col relative overflow-hidden"
             >
               {resume.is_default && (
                 <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-[10px] font-bold px-3 py-1 rounded-bl-lg flex items-center gap-1">
@@ -199,14 +123,11 @@ export default function ResumesPage() {
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10 flex items-center justify-center text-primary shadow-inner">
                   <FileText size={24} />
                 </div>
-                <button className="text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                  <MoreVertical size={18} />
-                </button>
               </div>
               
-              <h3 className="text-xl font-bold mb-1 group-hover:text-primary transition-colors pr-6">{resume.title}</h3>
+              <h3 className="text-xl font-bold mb-1 group-hover:text-primary transition-colors pr-6 truncate">{resume.title}</h3>
               
-              <div className="space-y-2 mt-2">
+              <div className="space-y-2 mt-2 mb-6">
                 {resume.target_role && (
                   <div className="flex items-center text-sm text-muted-foreground gap-2">
                     <Target size={14} className="text-primary/70" />
@@ -214,16 +135,32 @@ export default function ResumesPage() {
                   </div>
                 )}
                 <div className="flex items-center text-xs text-muted-foreground gap-2 pt-2 border-t border-border/50">
-                  <CheckCircle2 size={14} className={resume.content ? "text-green-500" : "text-muted-foreground/50"} />
-                  <span>{resume.content ? "Conteúdo preenchido" : "Conteúdo vazio (Pendente)"}</span>
+                  <CheckCircle2 size={14} className={resume.content?.experience ? "text-green-500" : "text-muted-foreground/50"} />
+                  <span>{resume.content?.experience ? "Conteúdo preenchido" : "Conteúdo vazio (Pendente)"}</span>
                 </div>
+              </div>
+
+              <div className="flex items-center gap-2 mt-auto">
+                <Link 
+                  href={`/resumes/${resume.id}`}
+                  className="flex-1 flex items-center justify-center gap-2 bg-secondary text-secondary-foreground py-2 rounded-md hover:bg-secondary/80 transition-colors text-sm font-medium"
+                >
+                  <Edit3 size={16} /> Editar
+                </Link>
+                <button 
+                  onClick={(e) => handleDelete(e, resume.id)}
+                  className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                  title="Excluir"
+                >
+                  <Trash2 size={18} />
+                </button>
               </div>
 
               {!resume.is_default && (
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="w-full mt-4 opacity-0 group-hover:opacity-100 transition-opacity text-xs h-8"
+                  className="w-full mt-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs h-8"
                   onClick={(e) => setAsDefault(e, resume.id)}
                 >
                   Definir como Principal
@@ -233,97 +170,6 @@ export default function ResumesPage() {
           ))}
         </div>
       )}
-
-      {/* Modal Novo Currículo */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Nova Versão de Currículo</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleCreateResume}>
-            <div className="grid gap-4 py-4">
-              {error && (
-                <div className="text-sm text-red-500 bg-red-50 dark:bg-red-950/50 p-3 rounded-md">
-                  {error}
-                </div>
-              )}
-              
-              <div className="space-y-2">
-                <Label htmlFor="title">Nome do Currículo *</Label>
-                <Input id="title" name="title" placeholder="Ex: Desenvolvedor React (Em Inglês)" required />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="target_role">Cargo Alvo</Label>
-                <Input id="target_role" name="target_role" placeholder="Ex: Senior Frontend Engineer" />
-              </div>
-            </div>
-            
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Criar
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Sheet Detalhes do Currículo */}
-      <Sheet open={!!selectedResume} onOpenChange={(open) => !open && setSelectedResume(null)}>
-        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
-          <SheetHeader className="mb-6">
-            <SheetTitle className="text-2xl">Editar Currículo</SheetTitle>
-            <SheetDescription>
-              Cole o texto completo do seu currículo aqui para permitir que a Inteligência Artificial calcule o Match Score nas vagas.
-            </SheetDescription>
-          </SheetHeader>
-          
-          {selectedResume && (
-            <form onSubmit={handleUpdateResume} className="space-y-6 pb-20">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="detail-title">Nome Interno</Label>
-                  <Input id="detail-title" name="title" defaultValue={selectedResume.title} required />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="detail-role">Cargo Alvo</Label>
-                  <Input id="detail-role" name="target_role" defaultValue={selectedResume.target_role || ""} placeholder="Ex: Tech Lead" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="detail-content" className="flex items-center gap-2">
-                  Texto Completo do Currículo 
-                  <Star size={12} className="text-primary fill-primary" />
-                </Label>
-                <Textarea 
-                  id="detail-content" 
-                  name="content" 
-                  rows={20} 
-                  placeholder="Cole todo o texto do seu currículo aqui (Experiência, Educação, Skills). Isso será usado como base para a IA comparar com os requisitos das vagas..."
-                  defaultValue={selectedResume.content?.text || ""}
-                  className="font-mono text-sm resize-none"
-                />
-                <p className="text-xs text-muted-foreground mt-2">
-                  Dica: Você pode copiar o texto de um PDF e colar diretamente aqui. A IA entenderá o formato bruto.
-                </p>
-              </div>
-
-              <SheetFooter className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t border-border mt-0">
-                <Button type="button" variant="outline" onClick={() => setSelectedResume(null)} className="w-full">
-                  Fechar
-                </Button>
-                <Button type="submit" disabled={isUpdating} className="w-full">
-                  {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Atualizar Currículo
-                </Button>
-              </SheetFooter>
-            </form>
-          )}
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }

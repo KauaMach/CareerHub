@@ -28,6 +28,7 @@ export default function JobDetailPage() {
   const [resumes, setResumes] = useState<any[]>([]);
   
   const [loading, setLoading] = useState(!isNew);
+  const [loadingDeps, setLoadingDeps] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -43,7 +44,11 @@ export default function JobDetailPage() {
         
         if (compRes.ok) setCompanies(await compRes.json());
         if (resuRes.ok) setResumes(await resuRes.json());
-      } catch (err) {}
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingDeps(false);
+      }
     }
     loadDependencies();
   }, []);
@@ -129,7 +134,7 @@ export default function JobDetailPage() {
     }
   };
 
-  if (loading) {
+  if (loading || loadingDeps) {
     return <div className="h-full flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
@@ -172,7 +177,11 @@ export default function JobDetailPage() {
                 <div className="space-y-2">
                   <Label>Empresa</Label>
                   <Select value={job.company_id || "none"} onValueChange={(val) => handleChange("company_id", val)}>
-                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione...">
+                        {job.company_id && job.company_id !== "none" ? companies.find(c => c.id === job.company_id)?.name : "Selecione..."}
+                      </SelectValue>
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Nenhuma / Cadastrar depois</SelectItem>
                       {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
@@ -313,7 +322,11 @@ export default function JobDetailPage() {
                   Selecione qual das suas versões de currículo melhor se encaixa nesta oportunidade.
                 </p>
                 <Select value={job.resume_id || "none"} onValueChange={(val) => handleChange("resume_id", val)}>
-                  <SelectTrigger className="bg-background"><SelectValue placeholder="Vincular Currículo" /></SelectTrigger>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Vincular Currículo">
+                      {job.resume_id && job.resume_id !== "none" ? resumes.find(r => r.id === job.resume_id)?.title : "Vincular Currículo"}
+                    </SelectValue>
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Sem Currículo Vinculado</SelectItem>
                     {resumes.map(r => <SelectItem key={r.id} value={r.id}>{r.title}</SelectItem>)}

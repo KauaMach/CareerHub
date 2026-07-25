@@ -1,165 +1,200 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Building2, Briefcase, FileText, Award, AlertCircle } from "lucide-react"
+import Link from "next/link";
+import { Briefcase, FileText, ArrowRight, BarChart3, TrendingUp, Activity, CheckCircle2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-
-interface DashboardData {
+interface Metrics {
   summary: {
-    companies: number
-    jobs: number
-    resumes: number
-    certificates: number
-  }
-  pipeline: Record<string, number>
+    companies: number;
+    jobs: number;
+    resumes: number;
+    certificates: number;
+  };
+  pipeline: Record<string, number>;
 }
 
 export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState("")
+  const [userName, setUserName] = useState("Carregando...");
+  const [metrics, setMetrics] = useState<Metrics | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchDashboard = async () => {
+    async function fetchData() {
       try {
-        const token = localStorage.getItem("token")
-        if (!token) return
+        const token = localStorage.getItem("token");
+        if (!token) return;
 
-        const headers = {
-          "Authorization": `Bearer ${token}`
-        }
+        const headers = { "Authorization": `Bearer ${token}` };
 
-        const [summaryRes, pipelineRes] = await Promise.all([
+        const [userRes, summaryRes, pipelineRes] = await Promise.all([
+          fetch("http://localhost:8000/api/v1/auth/me", { headers }),
           fetch("http://localhost:8000/api/v1/dashboard/summary", { headers }),
           fetch("http://localhost:8000/api/v1/dashboard/pipeline", { headers })
-        ])
+        ]);
 
-        if (!summaryRes.ok || !pipelineRes.ok) {
-          throw new Error("Falha ao carregar dados do dashboard")
+        if (userRes.ok) {
+          const user = await userRes.json();
+          if (user.name) {
+            setUserName(user.name.split(" ")[0]);
+          }
         }
 
-        const summary = await summaryRes.json()
-        const pipeline = await pipelineRes.json()
-
-        setData({ summary, pipeline })
-      } catch (err: any) {
-        setError(err.message)
+        if (summaryRes.ok && pipelineRes.ok) {
+          const summary = await summaryRes.json();
+          const pipeline = await pipelineRes.json();
+          setMetrics({ summary, pipeline });
+        }
+      } catch (err) {
+        console.error("Failed to fetch dashboard data", err);
       } finally {
-        setIsLoading(false)
+        setLoading(false);
       }
     }
+    fetchData();
+  }, []);
 
-    fetchDashboard()
-  }, [])
+  // Cores do funil baseadas no status
+  const statusConfig: Record<string, { label: string, color: string, w: string }> = {
+    "BACKLOG": { label: "Na Fila", color: "bg-slate-500", w: "bg-slate-100 dark:bg-slate-900" },
+    "APPLIED": { label: "Aplicado", color: "bg-blue-500", w: "bg-blue-100 dark:bg-blue-900" },
+    "INTERVIEW": { label: "Entrevista", color: "bg-purple-500", w: "bg-purple-100 dark:bg-purple-900" },
+    "OFFER": { label: "Proposta", color: "bg-green-500", w: "bg-green-100 dark:bg-green-900" },
+    "REJECTED": { label: "Recusado", color: "bg-red-500", w: "bg-red-100 dark:bg-red-900" },
+  };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6 animate-pulse">
-        <div>
-          <div className="h-8 w-48 bg-zinc-200 dark:bg-zinc-800 rounded-md mb-2"></div>
-          <div className="h-4 w-64 bg-zinc-200 dark:bg-zinc-800 rounded-md"></div>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map(i => (
-            <Card key={i} className="border-zinc-200 dark:border-zinc-800">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div className="h-4 w-24 bg-zinc-200 dark:bg-zinc-800 rounded-md"></div>
-                <div className="h-4 w-4 bg-zinc-200 dark:bg-zinc-800 rounded-full"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-8 w-12 bg-zinc-200 dark:bg-zinc-800 rounded-md"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    )
-  }
+  const statusOrder = ["BACKLOG", "APPLIED", "INTERVIEW", "OFFER", "REJECTED"];
+  const maxStatusCount = metrics && Object.keys(metrics.pipeline).length > 0
+    ? Math.max(...Object.values(metrics.pipeline).concat(1)) 
+    : 1;
 
-  if (error) {
-    return (
-      <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-md flex items-center gap-3 text-red-600 dark:text-red-400">
-        <AlertCircle className="h-5 w-5" />
-        <p>{error}</p>
-      </div>
-    )
-  }
+  const totalInterviews = metrics?.pipeline["INTERVIEW"] || 0;
+  const totalJobs = metrics?.summary.jobs || 0;
+  const interviewRate = totalJobs > 0 ? Math.round(((totalInterviews + (metrics?.pipeline["OFFER"] || 0)) / totalJobs) * 100) : 0;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Visão Geral</h1>
-        <p className="text-zinc-500 mt-2">Acompanhe as métricas e o funil da sua carreira.</p>
+    <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Olá, {userName} 👋</h1>
+        <p className="text-muted-foreground text-lg">
+          Aqui está o resumo da sua evolução profissional.
+        </p>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-zinc-200 dark:border-zinc-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Empresas Salvas</CardTitle>
-            <Building2 className="h-4 w-4 text-zinc-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{data?.summary.companies || 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-zinc-200 dark:border-zinc-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Vagas</CardTitle>
-            <Briefcase className="h-4 w-4 text-zinc-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{data?.summary.jobs || 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-zinc-200 dark:border-zinc-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Currículos</CardTitle>
-            <FileText className="h-4 w-4 text-zinc-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{data?.summary.resumes || 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-zinc-200 dark:border-zinc-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Certificados</CardTitle>
-            <Award className="h-4 w-4 text-zinc-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{data?.summary.certificates || 0}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Pipeline Snapshot */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="border-zinc-200 dark:border-zinc-800 col-span-2">
-          <CardHeader>
-            <CardTitle>Funil de Vagas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-4">
-              {data?.pipeline && Object.entries(data.pipeline).length > 0 ? (
-                Object.entries(data.pipeline).map(([status, count]) => (
-                  <div key={status} className="flex-1 min-w-[120px] p-4 bg-zinc-50 dark:bg-zinc-900 rounded-lg border border-zinc-100 dark:border-zinc-800">
-                    <p className="text-sm font-medium text-zinc-500 capitalize">{status}</p>
-                    <p className="text-3xl font-bold text-zinc-900 dark:text-zinc-50 mt-2">{count}</p>
-                  </div>
-                ))
-              ) : (
-                <div className="w-full text-center py-8 text-zinc-500">
-                  Nenhuma vaga adicionada ao funil ainda.
-                </div>
-              )}
+      {loading ? (
+        <div className="h-64 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : (
+        <>
+          {/* Métricas Top */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-card border border-border p-6 rounded-2xl shadow-sm flex flex-col gap-2">
+              <div className="flex items-center text-muted-foreground gap-2">
+                <Briefcase size={18} />
+                <span className="font-medium text-sm">Total de Vagas</span>
+              </div>
+              <span className="text-3xl font-bold">{metrics?.summary.jobs || 0}</span>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+
+            <div className="bg-card border border-border p-6 rounded-2xl shadow-sm flex flex-col gap-2">
+              <div className="flex items-center text-muted-foreground gap-2">
+                <TrendingUp size={18} />
+                <span className="font-medium text-sm">Taxa de Conversão</span>
+              </div>
+              <span className="text-3xl font-bold">{interviewRate}%</span>
+              <span className="text-xs text-muted-foreground">Chegaram a entrevista/oferta</span>
+            </div>
+
+            <div className="bg-card border border-border p-6 rounded-2xl shadow-sm flex flex-col gap-2">
+              <div className="flex items-center text-muted-foreground gap-2">
+                <CheckCircle2 size={18} />
+                <span className="font-medium text-sm">Entrevistas</span>
+              </div>
+              <span className="text-3xl font-bold">{totalInterviews}</span>
+            </div>
+
+            <div className="bg-card border border-border p-6 rounded-2xl shadow-sm flex flex-col gap-2">
+              <div className="flex items-center text-muted-foreground gap-2">
+                <Activity size={18} />
+                <span className="font-medium text-sm">Empresas</span>
+              </div>
+              <span className="text-3xl font-bold">{metrics?.summary.companies || 0}</span>
+              <span className="text-xs text-muted-foreground">Empresas mapeadas</span>
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Funil de Vagas */}
+            <div className="lg:col-span-2 bg-card border border-border p-8 rounded-2xl shadow-sm">
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <BarChart3 size={20} className="text-primary" /> Funil de Candidaturas
+                </h2>
+              </div>
+              
+              <div className="space-y-6">
+                {statusOrder.map((status) => {
+                  const count = metrics?.pipeline[status] || 0;
+                  const percent = Math.round((count / maxStatusCount) * 100);
+                  const config = statusConfig[status];
+                  
+                  return (
+                    <div key={status} className="flex flex-col gap-2">
+                      <div className="flex justify-between text-sm font-medium">
+                        <span>{config?.label || status}</span>
+                        <span className="text-muted-foreground">{count} vaga(s)</span>
+                      </div>
+                      <div className={`h-3 w-full rounded-full ${config?.w || 'bg-slate-100'}`}>
+                        <div 
+                          className={`h-full rounded-full transition-all duration-1000 ease-out ${config?.color || 'bg-slate-500'}`} 
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+                
+                {metrics?.summary.jobs === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Você ainda não cadastrou nenhuma vaga. <br/>
+                    Comece a usar o Kanban para ver seu funil.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Ações Rápidas */}
+            <div className="flex flex-col gap-4">
+              <Link href="/jobs" className="bg-card border border-border p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow group flex flex-col h-full">
+                <div className="h-10 w-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center mb-4">
+                  <Briefcase size={20} />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Quadro Kanban</h3>
+                <p className="text-muted-foreground text-sm mb-6 flex-grow">
+                  Gerencie suas aplicações arrastando vagas pelo funil.
+                </p>
+                <div className="flex items-center text-primary font-medium text-sm group-hover:underline">
+                  Acessar Vagas <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </Link>
+
+              <Link href="/resumes" className="bg-card border border-border p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow group flex flex-col h-full">
+                <div className="h-10 w-10 bg-blue-500/10 text-blue-500 rounded-xl flex items-center justify-center mb-4">
+                  <FileText size={20} />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">IA Currículos</h3>
+                <p className="text-muted-foreground text-sm mb-6 flex-grow">
+                  Gere currículos otimizados por Inteligência Artificial.
+                </p>
+                <div className="flex items-center text-blue-500 font-medium text-sm group-hover:underline">
+                  Acessar Currículos <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </Link>
+            </div>
+          </div>
+        </>
+      )}
     </div>
-  )
+  );
 }

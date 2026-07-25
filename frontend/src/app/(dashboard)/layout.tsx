@@ -1,109 +1,85 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
-import { motion } from "framer-motion"
-import { 
-  LayoutDashboard, 
-  Building2, 
-  Briefcase, 
-  FileText, 
-  Award, 
-  LogOut,
-  Menu,
-  X
-} from "lucide-react"
+import { ReactNode, useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { Briefcase, LayoutDashboard, FileText, Building, Award, LogOut } from "lucide-react";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 
-import { Button } from "@/components/ui/button"
-
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/companies", label: "Empresas", icon: Building2 },
-  { href: "/jobs", label: "Vagas", icon: Briefcase },
-  { href: "/resumes", label: "Currículos", icon: FileText },
-  { href: "/certificates", label: "Certificados", icon: Award },
-]
-
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
-  const router = useRouter()
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isMounted, setIsMounted] = useState(false)
+export default function DashboardLayout({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true)
-    const token = localStorage.getItem("token")
+    setIsMounted(true);
+    const token = localStorage.getItem("token");
     if (!token) {
-      router.push("/login")
+      router.push("/login");
     }
-  }, [router])
+  }, [router]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token")
-    router.push("/login")
-  }
+    localStorage.removeItem("token");
+    router.push("/login");
+  };
 
-  if (!isMounted) return null
+  const getNavClass = (path: string) => {
+    const isActive = path === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(path);
+    return isActive
+      ? "flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary font-medium transition-colors"
+      : "flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors";
+  };
+
+  if (!isMounted) return null;
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col md:flex-row">
-      {/* Mobile Header */}
-      <div className="md:hidden flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-        <span className="text-xl font-bold text-zinc-900 dark:text-zinc-50">CareerHub</span>
-        <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-          {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </Button>
-      </div>
-
+    <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
-      <aside className={`
-        ${isMobileMenuOpen ? 'flex' : 'hidden'} 
-        md:flex flex-col w-full md:w-64 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shrink-0
-      `}>
-        <div className="hidden md:flex items-center mb-8 px-2">
-          <span className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">CareerHub</span>
+      <aside className="w-64 border-r border-border bg-card flex flex-col hidden md:flex">
+        <div className="h-16 flex items-center px-6 border-b border-border">
+          <div className="flex items-center gap-2 text-primary font-bold text-xl">
+            <div className="h-8 w-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">CH</div>
+            CareerHub
+          </div>
         </div>
-        
-        <nav className="flex-1 space-y-1">
-          {navItems.map((item) => {
-            const Icon = item.icon
-            const isActive = pathname.startsWith(item.href)
-            
-            return (
-              <Link key={item.href} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
-                <span className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors
-                  ${isActive 
-                    ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50" 
-                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-50"}
-                `}>
-                  <Icon className="h-5 w-5" />
-                  {item.label}
-                </span>
-              </Link>
-            )
-          })}
+        <nav className="flex-1 px-4 py-6 space-y-2">
+          <Link href="/dashboard" className={getNavClass("/dashboard")}>
+            <LayoutDashboard size={20} /> Dashboard
+          </Link>
+          <Link href="/jobs" className={getNavClass("/jobs")}>
+            <Briefcase size={20} /> Vagas
+          </Link>
+          <Link href="/resumes" className={getNavClass("/resumes")}>
+            <FileText size={20} /> Currículos
+          </Link>
+          <Link href="/companies" className={getNavClass("/companies")}>
+            <Building size={20} /> Empresas
+          </Link>
+          <Link href="/certificates" className={getNavClass("/certificates")}>
+            <Award size={20} /> Certificados
+          </Link>
         </nav>
-
-        <div className="mt-auto pt-4 border-t border-zinc-200 dark:border-zinc-800">
-          <Button variant="ghost" className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30" onClick={handleLogout}>
-            <LogOut className="mr-2 h-5 w-5" />
-            Sair
-          </Button>
+        <div className="p-4 border-t border-border flex items-center justify-between">
+          <button onClick={handleLogout} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <LogOut size={18} /> Sair
+          </button>
+          <ThemeSwitcher />
         </div>
       </aside>
-
+      
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-8 overflow-y-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          {children}
-        </motion.div>
+      <main className="flex-1 overflow-auto bg-zinc-50/50 dark:bg-zinc-950/50">
+        {/* Mobile Header */}
+        <div className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card">
+          <div className="flex items-center gap-2 text-primary font-bold text-xl">
+            <div className="h-8 w-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">CH</div>
+            CareerHub
+          </div>
+          <ThemeSwitcher />
+        </div>
+        {children}
       </main>
     </div>
-  )
+  );
 }

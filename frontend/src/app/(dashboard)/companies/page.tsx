@@ -18,16 +18,26 @@ import {
   SheetContent,
   SheetDescription,
   SheetHeader,
-  SheetTitle,
   SheetFooter
 } from "@/components/ui/sheet";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 
 interface Company {
   id: string;
   name: string;
   website: string | null;
   industry: string | null;
+  size: string | null;
   location: string | null;
+  description: string | null;
+  linkedin_url: string | null;
+  glassdoor_url: string | null;
   notes: string | null;
   created_at: string;
 }
@@ -110,7 +120,11 @@ export default function CompaniesPage() {
       name: formData.get("name"),
       website: formData.get("website") || null,
       industry: formData.get("industry") || null,
+      size: formData.get("size") || null,
       location: formData.get("location") || null,
+      description: formData.get("description") || null,
+      linkedin_url: formData.get("linkedin_url") || null,
+      glassdoor_url: formData.get("glassdoor_url") || null,
       notes: formData.get("notes") || null,
     };
 
@@ -275,12 +289,48 @@ export default function CompaniesPage() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="detail-size">Porte da Empresa</Label>
+                <Select name="size" defaultValue={selectedCompany.size || "none"}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o porte" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Não informado</SelectItem>
+                    <SelectItem value="STARTUP">Startup / Pequena (1-50)</SelectItem>
+                    <SelectItem value="SMB">Média (51-500)</SelectItem>
+                    <SelectItem value="ENTERPRISE">Grande / Enterprise (500+)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="detail-location">Localização Sede</Label>
                 <Input id="detail-location" name="location" defaultValue={selectedCompany.location || ""} placeholder="Ex: São Paulo, SP" />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="detail-website">Website (Carreiras)</Label>
+                <Label htmlFor="detail-description">Descrição Institucional</Label>
+                <Textarea 
+                  id="detail-description" 
+                  name="description" 
+                  rows={4} 
+                  placeholder="Descrição pública da empresa (visão, produtos, etc)."
+                  defaultValue={selectedCompany.description || ""}
+                  className="resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="detail-linkedin">LinkedIn (URL)</Label>
+                  <Input id="detail-linkedin" name="linkedin_url" type="url" defaultValue={selectedCompany.linkedin_url || ""} placeholder="https://linkedin.com/company/..." />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="detail-glassdoor">Glassdoor (URL)</Label>
+                  <Input id="detail-glassdoor" name="glassdoor_url" type="url" defaultValue={selectedCompany.glassdoor_url || ""} placeholder="https://glassdoor.com/..." />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="detail-website">Website Oficial</Label>
                 <Input id="detail-website" name="website" type="url" defaultValue={selectedCompany.website || ""} placeholder="https://..." />
               </div>
 

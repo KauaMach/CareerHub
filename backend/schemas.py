@@ -25,7 +25,13 @@ class CompanyBase(BaseModel):
     name: str
     website: str | None = None
     industry: str | None = None
+    size: str | None = None
     location: str | None = None
+    description: str | None = None
+    linkedin_url: str | None = None
+    glassdoor_url: str | None = None
+    tech_stack: dict | list | None = None
+    benefits: dict | list | None = None
     notes: str | None = None
 
 class CompanyCreate(CompanyBase):
@@ -35,7 +41,13 @@ class CompanyUpdate(BaseModel):
     name: str | None = None
     website: str | None = None
     industry: str | None = None
+    size: str | None = None
     location: str | None = None
+    description: str | None = None
+    linkedin_url: str | None = None
+    glassdoor_url: str | None = None
+    tech_stack: dict | list | None = None
+    benefits: dict | list | None = None
     notes: str | None = None
 
 class CompanyResponse(CompanyBase):

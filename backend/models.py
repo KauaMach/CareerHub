@@ -32,13 +32,48 @@ class Company(Base):
     name = Column(String(255), nullable=False)
     website = Column(String(255))
     industry = Column(String(255))
+    size = Column(String(50))
     location = Column(String(255))
+    description = Column(Text)
+    linkedin_url = Column(String(1024))
+    glassdoor_url = Column(String(1024))
+    tech_stack = Column(JSON)
+    benefits = Column(JSON)
     notes = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     user = relationship("User", back_populates="companies")
     jobs = relationship("Job", back_populates="company")
+    contacts = relationship("CompanyContact", back_populates="company", cascade="all, delete-orphan")
+    company_notes = relationship("CompanyNote", back_populates="company", cascade="all, delete-orphan")
+
+class CompanyContact(Base):
+    __tablename__ = "company_contact"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=generate_uuid)
+    company_id = Column(UUID(as_uuid=False), ForeignKey("company.id"), index=True, nullable=False)
+    name = Column(String(255), nullable=False)
+    role = Column(String(255))
+    email = Column(String(255))
+    linkedin_url = Column(String(1024))
+    last_contacted_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    company = relationship("Company", back_populates="contacts")
+
+class CompanyNote(Base):
+    __tablename__ = "company_note"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=generate_uuid)
+    company_id = Column(UUID(as_uuid=False), ForeignKey("company.id"), index=True, nullable=False)
+    content = Column(Text, nullable=False)
+    note_type = Column(String(50))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    company = relationship("Company", back_populates="company_notes")
 
 class Job(Base):
     __tablename__ = "job"

@@ -20,6 +20,11 @@ def create_job(job: schemas.JobCreate, db: Session = Depends(get_db), current_us
         company = db.query(models.Company).filter(models.Company.id == str(job.company_id), models.Company.user_id == current_user.id).first()
         if not company:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Company not found or doesn't belong to the user")
+            
+    if job.resume_id:
+        resume = db.query(models.Resume).filter(models.Resume.id == str(job.resume_id), models.Resume.user_id == current_user.id).first()
+        if not resume:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Resume not found or doesn't belong to the user")
 
     db_job = models.Job(**job.model_dump(), user_id=current_user.id)
     db.add(db_job)
@@ -51,6 +56,11 @@ def update_job(job_id: str, job_update: schemas.JobUpdate, db: Session = Depends
         company = db.query(models.Company).filter(models.Company.id == str(update_data["company_id"]), models.Company.user_id == current_user.id).first()
         if not company:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Company not found or doesn't belong to the user")
+
+    if "resume_id" in update_data and update_data["resume_id"] is not None:
+        resume = db.query(models.Resume).filter(models.Resume.id == str(update_data["resume_id"]), models.Resume.user_id == current_user.id).first()
+        if not resume:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Resume not found or doesn't belong to the user")
 
     for key, value in update_data.items():
         setattr(db_job, key, value)

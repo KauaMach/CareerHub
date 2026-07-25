@@ -1,5 +1,6 @@
-import { api } from "@/lib/api";
 "use client";
+
+import { api } from "@/lib/api";
 
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
@@ -25,8 +26,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const getNavClass = (path: string) => {
     const isActive = path === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(path);
     return isActive
-      ? "flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary font-medium transition-colors"
-      : "flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors";
+      ? "flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary font-semibold transition-colors"
+      : "flex items-center gap-3 px-3 py-2.5 rounded-lg text-foreground/70 font-medium hover:bg-accent hover:text-accent-foreground transition-colors";
   };
 
   if (!isMounted) return null;

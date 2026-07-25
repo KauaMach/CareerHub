@@ -1,18 +1,39 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Building2, MapPin, DollarSign, Calendar, Clock, MoreVertical } from "lucide-react";
+import { Plus, Building2, MapPin, DollarSign, Calendar, Clock, MoreVertical, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter 
+} from "@/components/ui/dialog";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 
 interface Job {
   id: string;
   title: string;
-  company_id: string;
+  company_id: string | null;
   status: string;
   location: string;
   salary_range: string;
   work_model: string;
   created_at: string;
+}
+
+interface Company {
+  id: string;
+  name: string;
 }
 
 const STATUSES = [
@@ -25,30 +46,89 @@ const STATUSES = [
 
 export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Modal states
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const fetchJobsAndCompanies = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const headers = { "Authorization": `Bearer ${token}` };
+
+      const [jobsRes, companiesRes] = await Promise.all([
+        fetch("http://localhost:8000/api/v1/jobs", { headers }),
+        fetch("http://localhost:8000/api/v1/companies", { headers })
+      ]);
+
+      if (jobsRes.ok) {
+        setJobs(await jobsRes.json());
+      }
+      if (companiesRes.ok) {
+        setCompanies(await companiesRes.json());
+      }
+    } catch (err) {
+      console.error("Failed to fetch data", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchJobs() {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-
-        const res = await fetch("http://localhost:8000/api/v1/jobs", {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          setJobs(data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch jobs", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchJobs();
+    fetchJobsAndCompanies();
   }, []);
+
+  const handleCreateJob = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError("");
+
+    const formData = new FormData(e.currentTarget);
+    
+    // Construct payload matching JobCreate schema
+    const payload: Record<string, any> = {
+      title: formData.get("title"),
+      status: formData.get("status") || "BACKLOG",
+    };
+    
+    const company_id = formData.get("company_id");
+    if (company_id && company_id !== "none") payload.company_id = company_id;
+    
+    const location = formData.get("location");
+    if (location) payload.location = location;
+    
+    const work_model = formData.get("work_model");
+    if (work_model && work_model !== "none") payload.work_model = work_model;
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:8000/api/v1/jobs", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` 
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.detail?.[0]?.message || "Erro ao criar vaga");
+      }
+
+      setIsModalOpen(false);
+      fetchJobsAndCompanies(); // Refresh lists
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Agrupar vagas por status
   const jobsByStatus = STATUSES.reduce((acc, status) => {
@@ -61,6 +141,12 @@ export default function JobsPage() {
     return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(date);
   };
 
+  const getCompanyName = (companyId: string | null) => {
+    if (!companyId) return "Sem empresa associada";
+    const comp = companies.find(c => c.id === companyId);
+    return comp ? comp.name : "Empresa Desconhecida";
+  };
+
   return (
     <div className="h-full flex flex-col p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -68,12 +154,13 @@ export default function JobsPage() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Vagas</h1>
           <p className="text-muted-foreground mt-1">Gerencie suas candidaturas através do funil.</p>
         </div>
-        <Button className="shrink-0 rounded-full px-6 shadow-sm">
+        <Button onClick={() => setIsModalOpen(true)} className="shrink-0 rounded-full px-6 shadow-sm">
           <Plus className="mr-2 h-4 w-4" />
           Nova Vaga
         </Button>
       </div>
 
+      {/* Kanban Board */}
       {loading ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -108,7 +195,7 @@ export default function JobsPage() {
                       
                       <div className="text-sm text-muted-foreground mb-4 flex items-center gap-1.5">
                         <Building2 size={14} />
-                        <span className="truncate">Empresa (Em breve)</span>
+                        <span className="truncate">{getCompanyName(job.company_id)}</span>
                       </div>
 
                       <div className="flex flex-wrap gap-2 text-xs mb-4">
@@ -117,16 +204,16 @@ export default function JobsPage() {
                             <MapPin size={12} /> <span className="truncate max-w-[80px]">{job.location}</span>
                           </div>
                         )}
-                        {job.salary_range && (
+                        {job.work_model && (
                           <div className="flex items-center gap-1 text-muted-foreground bg-secondary/50 px-2 py-1 rounded-md">
-                            <DollarSign size={12} /> <span>{job.salary_range}</span>
+                            <Clock size={12} /> <span className="truncate capitalize">{job.work_model}</span>
                           </div>
                         )}
                       </div>
 
                       <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t border-border">
                         <div className="flex items-center gap-1.5">
-                          <Clock size={12} />
+                          <Calendar size={12} />
                           <span>Adicionado {formatDate(job.created_at)}</span>
                         </div>
                       </div>
@@ -144,6 +231,89 @@ export default function JobsPage() {
           </div>
         </div>
       )}
+
+      {/* Modal Nova Vaga */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Cadastrar Nova Vaga</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateJob}>
+            <div className="grid gap-4 py-4">
+              {error && (
+                <div className="text-sm text-red-500 bg-red-50 dark:bg-red-950/50 p-3 rounded-md">
+                  {error}
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <Label htmlFor="title">Título da Vaga *</Label>
+                <Input id="title" name="title" placeholder="Ex: Desenvolvedor Frontend Sênior" required />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="company_id">Empresa</Label>
+                <Select name="company_id">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma empresa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhuma (Adicionar depois)</SelectItem>
+                    {companies.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status">Status Inicial</Label>
+                <Select name="status" defaultValue="BACKLOG">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUSES.map(s => (
+                      <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="location">Localização</Label>
+                  <Input id="location" name="location" placeholder="Ex: São Paulo, SP" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="work_model">Modelo</Label>
+                  <Select name="work_model">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Não informado</SelectItem>
+                      <SelectItem value="remoto">Remoto</SelectItem>
+                      <SelectItem value="hibrido">Híbrido</SelectItem>
+                      <SelectItem value="presencial">Presencial</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Salvar Vaga
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

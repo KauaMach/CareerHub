@@ -104,6 +104,12 @@ export default function JobsPage() {
     
     const work_model = formData.get("work_model");
     if (work_model && work_model !== "none") payload.work_model = work_model;
+    
+    const source = formData.get("source");
+    if (source) payload.source = source;
+    
+    const seniority = formData.get("seniority");
+    if (seniority && seniority !== "none") payload.seniority = seniority;
 
     try {
       const token = localStorage.getItem("token");
@@ -296,6 +302,29 @@ export default function JobsPage() {
                       <SelectItem value="remoto">Remoto</SelectItem>
                       <SelectItem value="hibrido">Híbrido</SelectItem>
                       <SelectItem value="presencial">Presencial</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="source">Origem (Opcional)</Label>
+                  <Input id="source" name="source" placeholder="Ex: LinkedIn, Gupy, Indicação" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="seniority">Senioridade</Label>
+                  <Select name="seniority">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Não informado</SelectItem>
+                      <SelectItem value="Estágio">Estágio</SelectItem>
+                      <SelectItem value="Júnior">Júnior</SelectItem>
+                      <SelectItem value="Pleno">Pleno</SelectItem>
+                      <SelectItem value="Sênior">Sênior</SelectItem>
+                      <SelectItem value="Especialista">Especialista / Tech Lead</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

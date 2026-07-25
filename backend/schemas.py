@@ -49,40 +49,54 @@ class CompanyResponse(CompanyBase):
 
 class JobBase(BaseModel):
     company_id: UUID | None = None
+    resume_id: UUID | None = None
     title: str
     description: str | None = None
     url: str | None = None
     status: str = "interested"
+    source: str | None = None
+    seniority: str | None = None
     location: str | None = None
     work_model: str | None = None
+    employment_type: str | None = None
     salary_min: float | None = None
     salary_max: float | None = None
     currency: str | None = None
+    benefits: dict | list | None = None
     deadline: datetime | None = None
     notes: str | None = None
     checklist: dict | list | None = None
     is_favorite: bool = False
     applied_at: datetime | None = None
+    rejection_reason: str | None = None
+    ats_match_score: float | None = None
 
 class JobCreate(JobBase):
     pass
 
 class JobUpdate(BaseModel):
     company_id: UUID | None = None
+    resume_id: UUID | None = None
     title: str | None = None
     description: str | None = None
     url: str | None = None
     status: str | None = None
+    source: str | None = None
+    seniority: str | None = None
     location: str | None = None
     work_model: str | None = None
+    employment_type: str | None = None
     salary_min: float | None = None
     salary_max: float | None = None
     currency: str | None = None
+    benefits: dict | list | None = None
     deadline: datetime | None = None
     notes: str | None = None
     checklist: dict | list | None = None
     is_favorite: bool | None = None
     applied_at: datetime | None = None
+    rejection_reason: str | None = None
+    ats_match_score: float | None = None
 
 class JobStatusUpdate(BaseModel):
     status: str

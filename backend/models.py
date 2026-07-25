@@ -46,25 +46,33 @@ class Job(Base):
     id = Column(UUID(as_uuid=False), primary_key=True, default=generate_uuid)
     user_id = Column(UUID(as_uuid=False), ForeignKey("user.id"), index=True, nullable=False)
     company_id = Column(UUID(as_uuid=False), ForeignKey("company.id"), index=True, nullable=True)
+    resume_id = Column(UUID(as_uuid=False), ForeignKey("resume.id"), index=True, nullable=True)
     title = Column(String(255), nullable=False)
     description = Column(Text)
     url = Column(String(1024))
     status = Column(String(50), nullable=False, default="interested")
+    source = Column(String(255))
+    seniority = Column(String(50))
     location = Column(String(255))
     work_model = Column(String(50))
+    employment_type = Column(String(50))
     salary_min = Column(Numeric(10, 2))
     salary_max = Column(Numeric(10, 2))
     currency = Column(String(3))
+    benefits = Column(JSON)
     deadline = Column(DateTime(timezone=True))
     notes = Column(Text)
     checklist = Column(JSON)
     is_favorite = Column(Boolean, default=False)
     applied_at = Column(DateTime(timezone=True))
+    rejection_reason = Column(String(255))
+    ats_match_score = Column(Numeric(5, 2))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     user = relationship("User", back_populates="jobs")
     company = relationship("Company", back_populates="jobs")
+    resume = relationship("Resume", back_populates="jobs")
 
 class Resume(Base):
     __tablename__ = "resume"
@@ -79,6 +87,7 @@ class Resume(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     user = relationship("User", back_populates="resumes")
+    jobs = relationship("Job", back_populates="resume")
 
 class Certificate(Base):
     __tablename__ = "certificate"

@@ -370,6 +370,7 @@ Relacao: evita que decisoes importantes fiquem escondidas em conversas ou PRs.
 `-- docs/
     |-- DOCUMENTATION.md
     |-- PRODUCT.md
+    |-- DESIGN_SYSTEM.md
     |-- ARCHITECTURE.md
     |-- ROADMAP.md
     |-- API.md

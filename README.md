@@ -6,7 +6,7 @@ O objetivo inicial e substituir planilhas e arquivos soltos por um fluxo simples
 
 ## Status
 
-Projeto em fase de definicao e fundacao. A documentacao base ja esta sendo organizada antes do scaffold da aplicacao.
+Projeto na **Fase 0 - Fundacao**. O scaffold inicial de frontend (Next.js), backend (FastAPI) e ambiente local (Docker Compose) ja foram criados.
 
 ## Documentacao Principal
 
@@ -50,14 +50,32 @@ Resumo:
 
 ## Setup Local
 
-Ainda nao ha scaffold de aplicacao. Quando o codigo for iniciado, este README deve conter:
+### Requisitos
+- Node.js (v18+) e npm
+- Python (3.10+)
+- Docker e Docker Compose (para o banco de dados)
 
-- requisitos;
-- instalacao;
-- variaveis de ambiente;
-- comandos de desenvolvimento;
-- comandos de teste;
-- comandos de lint/typecheck.
+### Ambiente Local (Banco de Dados)
+Para subir o banco de dados PostgreSQL via Docker:
+```bash
+docker-compose up -d
+```
+
+### Frontend (Next.js)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Backend (FastAPI)
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # ou venv\Scripts\activate no Windows
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
 
 ## Referencias
 

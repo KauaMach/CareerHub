@@ -1,3 +1,4 @@
+import { api } from "@/lib/api";
 "use client";
 
 import { ReactNode, useEffect, useState } from "react";
@@ -13,14 +14,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setIsMounted(true);
-    const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/login");
-    }
+    api.get("/auth/me").catch(() => router.push("/login"));
   }, [router]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    api.post("/auth/logout");
     router.push("/login");
   };
 

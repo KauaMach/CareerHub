@@ -1,8 +1,13 @@
+import { api } from "@/lib/api";
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { Loader2, ArrowLeft, Building2, MapPin, Globe, Save, Trash2, Briefcase } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Loader2, ArrowLeft, Building2, Globe, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,94 +15,102 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+const companySchema = z.object({
+  name: z.string().min(1, "O nome da empresa é obrigatório"),
+  industry: z.string().nullable().optional(),
+  size: z.string().nullable().optional(),
+  location: z.string().nullable().optional(),
+  website: z.string().url("URL inválida").or(z.literal("")).nullable().optional(),
+  linkedin_url: z.string().url("URL inválida").or(z.literal("")).nullable().optional(),
+  glassdoor_url: z.string().url("URL inválida").or(z.literal("")).nullable().optional(),
+  description: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+});
+
+type CompanyFormValues = z.infer<typeof companySchema>;
+
 export default function CompanyDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const isNew = params.id === "new";
   
-  const [company, setCompany] = useState<any>({});
-  const [loading, setLoading] = useState(!isNew);
-  const [saving, setSaving] = useState(false);
+  const { register, handleSubmit, control, reset, formState: { errors } } = useForm<CompanyFormValues>({
+    resolver: zodResolver(companySchema),
+    defaultValues: {
+      name: "",
+    }
+  });
+
+  const { data: company, isLoading: loadingCompany } = useQuery({
+    queryKey: ["companies", params.id],
+    queryFn: async () => {
+      if (isNew) return null;
+      const res = await api.get(`/companies/${params.id}`);
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    enabled: !isNew
+  });
 
   useEffect(() => {
-    if (isNew) return;
-    
-    async function fetchCompany() {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(`http://localhost:8000/api/v1/companies/${params.id}`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setCompany(data);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+    if (company) {
+      reset({
+        name: company.name || "",
+        industry: company.industry || "",
+        size: company.size || "none",
+        location: company.location || "",
+        website: company.website || "",
+        linkedin_url: company.linkedin_url || "",
+        glassdoor_url: company.glassdoor_url || "",
+        description: company.description || "",
+        notes: company.notes || "",
+      });
     }
-    fetchCompany();
-  }, [params.id, isNew]);
+  }, [company, reset]);
 
-  const handleChange = (field: string, value: any) => {
-    setCompany(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      const token = localStorage.getItem("token");
+  const saveMutation = useMutation({
+    mutationFn: async (payload: any) => {
+      const res = isNew 
+        ? await api.fetch("/companies", { method: "POST", body: JSON.stringify(payload) }) 
+        : await api.fetch(`/companies/${params.id}`, { method: "PATCH", body: JSON.stringify(payload) });
       
-      const payload = { ...company };
-      // cleanup empty strings to null
-      Object.keys(payload).forEach(k => {
-        if (payload[k] === "" || payload[k] === "none") payload[k] = null;
-      });
-
-      if (isNew) {
-        const res = await fetch("http://localhost:8000/api/v1/companies", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify(payload)
-        });
-        if (res.ok) {
-          const data = await res.json();
-          router.push(`/companies/${data.id}`);
-        } else {
-          alert("Erro ao criar empresa.");
-        }
-      } else {
-        const res = await fetch(`http://localhost:8000/api/v1/companies/${params.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify(payload)
-        });
-        if (res.ok) alert("Empresa salva com sucesso!");
-        else alert("Erro ao salvar empresa.");
-      }
-    } catch (err) {
+      if (!res.ok) throw new Error("Failed to save");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["companies"] });
+      if (isNew) router.push(`/companies/${data.id}`);
+      else alert("Empresa salva com sucesso!");
+    },
+    onError: () => {
       alert("Erro ao salvar empresa.");
-    } finally {
-      setSaving(false);
     }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.fetch(`/companies/${params.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["companies"] });
+      router.push("/companies");
+    },
+    onError: () => alert("Erro ao excluir empresa.")
+  });
+
+  const onSubmit = (values: CompanyFormValues) => {
+    const payload = { ...values };
+    Object.keys(payload).forEach(k => {
+      if ((payload as any)[k] === "none" || (payload as any)[k] === "") {
+        (payload as any)[k] = null;
+      }
+    });
+    saveMutation.mutate(payload);
   };
 
-  const handleDelete = async () => {
-    if (!confirm("Tem certeza que deseja excluir esta empresa?")) return;
-    try {
-      const token = localStorage.getItem("token");
-      await fetch(`http://localhost:8000/api/v1/companies/${params.id}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      router.push("/companies");
-    } catch (err) {
-      alert("Erro ao excluir empresa.");
-    }
-  };
+  const loading = loadingCompany && !isNew;
 
   if (loading) {
     return <div className="h-full flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -112,7 +125,7 @@ export default function CompanyDetailPage() {
           </Link>
           <div>
             <h1 className="text-3xl font-bold tracking-tight mb-1">
-              {isNew ? "Adicionar Empresa" : company.name}
+              {isNew ? "Adicionar Empresa" : company?.name}
             </h1>
             <p className="text-muted-foreground">
               {isNew ? "Preencha os dados base para mapear uma nova empresa." : "Perfil completo da empresa e anotações."}
@@ -120,14 +133,16 @@ export default function CompanyDetailPage() {
           </div>
         </div>
         {!isNew && (
-          <Button variant="outline" className="text-destructive hover:bg-destructive/10" onClick={handleDelete}>
+          <Button variant="outline" className="text-destructive hover:bg-destructive/10" onClick={() => {
+            if (confirm("Tem certeza que deseja excluir esta empresa?")) deleteMutation.mutate();
+          }}>
             <Trash2 className="w-4 h-4 mr-2" /> Excluir Empresa
           </Button>
         )}
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <form id="company-form" onSubmit={handleSave} className="max-w-5xl mx-auto flex flex-col lg:flex-row gap-8 pb-24">
+        <form id="company-form" onSubmit={handleSubmit(onSubmit)} className="max-w-5xl mx-auto flex flex-col lg:flex-row gap-8 pb-24">
           
           {/* Lado Esquerdo - Info Principal */}
           <div className="flex-1 space-y-6">
@@ -137,31 +152,38 @@ export default function CompanyDetailPage() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Nome da Empresa *</Label>
-                  <Input value={company.name || ""} onChange={(e) => handleChange("name", e.target.value)} required />
+                  <Input {...register("name")} />
+                  {errors.name && <span className="text-red-500 text-xs">{errors.name.message}</span>}
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Setor / Indústria</Label>
-                    <Input value={company.industry || ""} onChange={(e) => handleChange("industry", e.target.value)} placeholder="Ex: Fintech" />
+                    <Input {...register("industry")} placeholder="Ex: Fintech" />
                   </div>
                   <div className="space-y-2">
                     <Label>Porte da Empresa</Label>
-                    <Select value={company.size || "none"} onValueChange={(val) => handleChange("size", val)}>
-                      <SelectTrigger><SelectValue placeholder="Selecione o porte" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Não informado</SelectItem>
-                        <SelectItem value="STARTUP">Startup / Pequena (1-50)</SelectItem>
-                        <SelectItem value="SMB">Média (51-500)</SelectItem>
-                        <SelectItem value="ENTERPRISE">Grande / Enterprise (500+)</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Controller
+                      name="size"
+                      control={control}
+                      render={({ field }) => (
+                        <Select value={field.value || "none"} onValueChange={field.onChange}>
+                          <SelectTrigger><SelectValue placeholder="Selecione o porte" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Não informado</SelectItem>
+                            <SelectItem value="STARTUP">Startup / Pequena (1-50)</SelectItem>
+                            <SelectItem value="SMB">Média (51-500)</SelectItem>
+                            <SelectItem value="ENTERPRISE">Grande / Enterprise (500+)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Localização Sede</Label>
-                  <Input value={company.location || ""} onChange={(e) => handleChange("location", e.target.value)} placeholder="Ex: São Paulo, SP" />
+                  <Input {...register("location")} placeholder="Ex: São Paulo, SP" />
                 </div>
               </div>
             </div>
@@ -171,16 +193,19 @@ export default function CompanyDetailPage() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Website Oficial</Label>
-                  <Input type="url" value={company.website || ""} onChange={(e) => handleChange("website", e.target.value)} placeholder="https://..." />
+                  <Input type="url" {...register("website")} placeholder="https://..." />
+                  {errors.website && <span className="text-red-500 text-xs">{errors.website.message}</span>}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>LinkedIn</Label>
-                    <Input type="url" value={company.linkedin_url || ""} onChange={(e) => handleChange("linkedin_url", e.target.value)} placeholder="https://linkedin.com/company/..." />
+                    <Input type="url" {...register("linkedin_url")} placeholder="https://linkedin.com/company/..." />
+                    {errors.linkedin_url && <span className="text-red-500 text-xs">{errors.linkedin_url.message}</span>}
                   </div>
                   <div className="space-y-2">
                     <Label>Glassdoor</Label>
-                    <Input type="url" value={company.glassdoor_url || ""} onChange={(e) => handleChange("glassdoor_url", e.target.value)} placeholder="https://glassdoor.com/..." />
+                    <Input type="url" {...register("glassdoor_url")} placeholder="https://glassdoor.com/..." />
+                    {errors.glassdoor_url && <span className="text-red-500 text-xs">{errors.glassdoor_url.message}</span>}
                   </div>
                 </div>
               </div>
@@ -195,8 +220,7 @@ export default function CompanyDetailPage() {
               <div className="space-y-2 mb-6">
                 <Label>Descrição Institucional</Label>
                 <Textarea 
-                  value={company.description || ""} 
-                  onChange={(e) => handleChange("description", e.target.value)} 
+                  {...register("description")}
                   rows={4} 
                   placeholder="Sobre a empresa, visão, produtos, concorrentes..."
                   className="resize-none"
@@ -206,8 +230,7 @@ export default function CompanyDetailPage() {
               <div className="space-y-2 flex-1 flex flex-col">
                 <Label>Anotações Culturais & Networking</Label>
                 <Textarea 
-                  value={company.notes || ""} 
-                  onChange={(e) => handleChange("notes", e.target.value)} 
+                  {...register("notes")}
                   placeholder="Anote aqui as dicas de cultura, contatos que você fez lá dentro, pessoas de RH, stack de tecnologia..."
                   className="resize-none flex-1 min-h-[200px]"
                 />
@@ -218,8 +241,8 @@ export default function CompanyDetailPage() {
       </div>
 
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-card border border-border p-2 rounded-full shadow-2xl flex items-center gap-2 z-50">
-        <Button form="company-form" type="submit" disabled={saving} className="rounded-full px-8 gap-2 shadow-md bg-primary text-primary-foreground h-12">
-          {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />} 
+        <Button form="company-form" type="submit" disabled={saveMutation.isPending} className="rounded-full px-8 gap-2 shadow-md bg-primary text-primary-foreground h-12">
+          {saveMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />} 
           <span className="text-base font-medium">Salvar Empresa</span>
         </Button>
       </div>

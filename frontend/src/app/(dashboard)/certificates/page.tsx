@@ -1,6 +1,7 @@
+import { api } from "@/lib/api";
 "use client";
 
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Plus, Award, Calendar, Link as LinkIcon, Loader2, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -15,28 +16,14 @@ interface Certificate {
 }
 
 export default function CertificatesPage() {
-  const [certificates, setCertificates] = useState<Certificate[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchCertificates = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:8000/api/v1/certificates", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (res.ok) {
-        setCertificates(await res.json());
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+  const { data: certificates = [], isLoading: loading } = useQuery<Certificate[]>({
+    queryKey: ["certificates"],
+    queryFn: async () => {
+      const res = await api.get("/certificates");
+      if (!res.ok) throw new Error("Failed to fetch certificates");
+      return res.json();
     }
-  };
-
-  useEffect(() => {
-    fetchCertificates();
-  }, []);
+  });
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Não informado";

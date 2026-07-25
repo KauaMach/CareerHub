@@ -1,6 +1,7 @@
+import { api } from "@/lib/api";
 "use client";
 
-import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useParams } from "next/navigation";
 import { ResumeEditor } from "@/components/resumes/resume-editor";
 import { Loader2, ArrowLeft } from "lucide-react";
@@ -11,55 +12,46 @@ export default function EditResumePage() {
   const router = useRouter();
   const isNew = params.id === "new";
   
-  const [resume, setResume] = useState<any>(null);
-  const [loading, setLoading] = useState(!isNew);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (isNew) return;
-    
-    async function fetchResume() {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(`http://localhost:8000/api/v1/resumes/${params.id}`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const json = await res.json();
-          setResume(json);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchResume();
-  }, [params.id, isNew]);
+  const { data: resume, isLoading: loading } = useQuery({
+    queryKey: ["resumes", params.id],
+    queryFn: async () => {
+      if (isNew) return null;
+      const res = await api.get(`/resumes/${params.id}`);
+      if (!res.ok) throw new Error("Failed to fetch resume");
+      return res.json();
+    },
+    enabled: !isNew
+  });
 
-  const handleSave = async (data: any) => {
-    try {
-      const token = localStorage.getItem("token");
+  const saveMutation = useMutation({
+    mutationFn: async (data: any) => {
       if (isNew) {
-        const res = await fetch("http://localhost:8000/api/v1/resumes", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify({ ...data, is_default: true }) // First is default
-        });
-        if (res.ok) {
-          const json = await res.json();
-          router.push(`/resumes/${json.id}`);
-        }
+        const res = await api.post("/resumes", { ...data, is_default: true });
+        if (!res.ok) throw new Error("Failed to create");
+        return res.json();
       } else {
-        await fetch(`http://localhost:8000/api/v1/resumes/${params.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify(data)
-        });
+        const res = await api.patch(`/resumes/${params.id}`, data);
+        if (!res.ok) throw new Error("Failed to update");
+        return res.json();
+      }
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["resumes"] });
+      if (isNew) {
+        router.push(`/resumes/${data.id}`);
+      } else {
         alert("Currículo salvo com sucesso!");
       }
-    } catch (err) {
+    },
+    onError: () => {
       alert("Erro ao salvar currículo.");
     }
+  });
+
+  const handleSave = (data: any) => {
+    saveMutation.mutate(data);
   };
 
   return (

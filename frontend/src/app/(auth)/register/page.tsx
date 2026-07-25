@@ -1,3 +1,4 @@
+import { api } from "@/lib/api";
 "use client"
 
 import { useState } from "react"
@@ -25,7 +26,7 @@ export default function RegisterPage() {
     const password = formData.get("password") as string
 
     try {
-      const res = await fetch("http://localhost:8000/api/v1/auth/register", {
+      const res = await api.fetch("/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password }),

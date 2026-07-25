@@ -1,9 +1,10 @@
+import { api } from "@/lib/api";
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Building2, MapPin, DollarSign, Calendar, Clock, MoreVertical, Loader2, FileText, Link as LinkIcon } from "lucide-react";
+import { useState } from "react";
+import { Plus, Building2, MapPin, Calendar, Clock, Loader2, FileText } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
 
 interface Job {
   id: string;
@@ -30,11 +31,6 @@ interface Company {
   name: string;
 }
 
-interface Resume {
-  id: string;
-  title: string;
-}
-
 const STATUSES = [
   { id: "BACKLOG", label: "Na Fila", color: "bg-slate-500", dot: "bg-slate-500", bg: "bg-slate-100 dark:bg-slate-900" },
   { id: "APPLIED", label: "Aplicado", color: "bg-blue-500", dot: "bg-blue-500", bg: "bg-blue-100 dark:bg-blue-900" },
@@ -44,38 +40,25 @@ const STATUSES = [
 ];
 
 export default function JobsPage() {
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [resumes, setResumes] = useState<Resume[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: jobs = [], isLoading: isLoadingJobs } = useQuery<Job[]>({
+    queryKey: ["jobs"],
+    queryFn: async () => {
+      const res = await api.get("/jobs");
+      if (!res.ok) throw new Error("Failed to fetch jobs");
+      return res.json();
+    },
+  });
 
-  const fetchData = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-      const headers = { "Authorization": `Bearer ${token}` };
+  const { data: companies = [], isLoading: isLoadingCompanies } = useQuery<Company[]>({
+    queryKey: ["companies"],
+    queryFn: async () => {
+      const res = await api.get("/companies");
+      if (!res.ok) throw new Error("Failed to fetch companies");
+      return res.json();
+    },
+  });
 
-      const [jobsRes, companiesRes, resumesRes] = await Promise.all([
-        fetch("http://localhost:8000/api/v1/jobs", { headers }),
-        fetch("http://localhost:8000/api/v1/companies", { headers }),
-        fetch("http://localhost:8000/api/v1/resumes", { headers })
-      ]);
-
-      if (jobsRes.ok) setJobs(await jobsRes.json());
-      if (companiesRes.ok) setCompanies(await companiesRes.json());
-      if (resumesRes.ok) setResumes(await resumesRes.json());
-    } catch (err) {
-      console.error("Failed to fetch data", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-
+  const loading = isLoadingJobs || isLoadingCompanies;
 
   const jobsByStatus = STATUSES.reduce((acc, status) => {
     acc[status.id] = jobs.filter(job => job.status === status.id);

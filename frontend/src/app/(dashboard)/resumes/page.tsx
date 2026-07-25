@@ -1,6 +1,7 @@
+import { api } from "@/lib/api";
 "use client";
 
-import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { Plus, FileText, Star, Loader2, Edit3, Trash2, CheckCircle2, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,60 +16,49 @@ interface Resume {
 }
 
 export default function ResumesPage() {
-  const [resumes, setResumes] = useState<Resume[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchResumes = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      const res = await fetch("http://localhost:8000/api/v1/resumes", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-
-      if (res.ok) setResumes(await res.json());
-    } catch (err) {
-      console.error("Failed to fetch resumes", err);
-    } finally {
-      setLoading(false);
+  const { data: resumes = [], isLoading: loading } = useQuery<Resume[]>({
+    queryKey: ["resumes"],
+    queryFn: async () => {
+      const res = await api.get("/resumes");
+      if (!res.ok) throw new Error("Failed to fetch resumes");
+      return res.json();
     }
-  };
+  });
 
-  useEffect(() => {
-    fetchResumes();
-  }, []);
-
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.preventDefault();
-    if (!confirm("Tem certeza que deseja excluir este currículo?")) return;
-    
-    try {
-      const token = localStorage.getItem("token");
-      await fetch(`http://localhost:8000/api/v1/resumes/${id}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      fetchResumes();
-    } catch (err) {
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.delete(`/resumes/${id}`);
+      if (!res.ok) throw new Error("Failed to delete resume");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["resumes"] });
+    },
+    onError: () => {
       alert("Erro ao excluir currículo.");
     }
+  });
+
+  const defaultMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.patch(`/resumes/${id}`, { is_default: true });
+      if (!res.ok) throw new Error("Failed to update resume");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["resumes"] });
+    }
+  });
+
+  const handleDelete = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    if (!confirm("Tem certeza que deseja excluir este currículo?")) return;
+    deleteMutation.mutate(id);
   };
 
-  const setAsDefault = async (e: React.MouseEvent, id: string) => {
+  const setAsDefault = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    try {
-      const token = localStorage.getItem("token");
-      // Idealy the backend should unset others, but for now we just PATCH this one.
-      await fetch(`http://localhost:8000/api/v1/resumes/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ is_default: true })
-      });
-      fetchResumes();
-    } catch (err) {
-      console.error(err);
-    }
+    defaultMutation.mutate(id);
   };
 
   const formatDate = (dateString: string) => {

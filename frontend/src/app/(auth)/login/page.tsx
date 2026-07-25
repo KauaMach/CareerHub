@@ -1,3 +1,4 @@
+import { api } from "@/lib/api";
 "use client"
 
 import { useState } from "react"
@@ -24,7 +25,7 @@ export default function LoginPage() {
     const password = formData.get("password") as string
 
     try {
-      const res = await fetch("http://localhost:8000/api/v1/auth/login", {
+      const res = await api.fetch("/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({

@@ -1,6 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auth, companies, jobs, resumes, certificates, dashboard
+from modules.Identity.auth_router import router as auth_router
+from modules.Companies.companies_router import router as companies_router
+from modules.Career.jobs_router import router as jobs_router
+from modules.Documents.resumes_router import router as resumes_router
+from modules.Documents.certificates_router import router as certificates_router
+from modules.Analytics.dashboard_router import router as dashboard_router
 
 app = FastAPI(
     title="CareerHub API",
@@ -17,12 +22,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
-app.include_router(companies.router, prefix="/api/v1/companies", tags=["companies"])
-app.include_router(jobs.router, prefix="/api/v1/jobs", tags=["jobs"])
-app.include_router(resumes.router, prefix="/api/v1/resumes", tags=["resumes"])
-app.include_router(certificates.router, prefix="/api/v1/certificates", tags=["certificates"])
-app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
+app.include_router(companies_router, prefix="/api/v1/companies", tags=["companies"])
+app.include_router(jobs_router, prefix="/api/v1/jobs", tags=["jobs"])
+app.include_router(resumes_router, prefix="/api/v1/resumes", tags=["resumes"])
+app.include_router(certificates_router, prefix="/api/v1/certificates", tags=["certificates"])
+app.include_router(dashboard_router, prefix="/api/v1/dashboard", tags=["dashboard"])
 
 @app.get("/")
 def read_root():

@@ -1,8 +1,9 @@
+import { api } from "@/lib/api";
 "use client";
 
 import Link from "next/link";
 import { Briefcase, FileText, ArrowRight, BarChart3, TrendingUp, Activity, CheckCircle2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 interface Metrics {
   summary: {
@@ -15,44 +16,36 @@ interface Metrics {
 }
 
 export default function DashboardPage() {
-  const [userName, setUserName] = useState("Carregando...");
-  const [metrics, setMetrics] = useState<Metrics | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-
-        const headers = { "Authorization": `Bearer ${token}` };
-
-        const [userRes, summaryRes, pipelineRes] = await Promise.all([
-          fetch("http://localhost:8000/api/v1/auth/me", { headers }),
-          fetch("http://localhost:8000/api/v1/dashboard/summary", { headers }),
-          fetch("http://localhost:8000/api/v1/dashboard/pipeline", { headers })
-        ]);
-
-        if (userRes.ok) {
-          const user = await userRes.json();
-          if (user.name) {
-            setUserName(user.name.split(" ")[0]);
-          }
-        }
-
-        if (summaryRes.ok && pipelineRes.ok) {
-          const summary = await summaryRes.json();
-          const pipeline = await pipelineRes.json();
-          setMetrics({ summary, pipeline });
-        }
-      } catch (err) {
-        console.error("Failed to fetch dashboard data", err);
-      } finally {
-        setLoading(false);
-      }
+  const { data: user, isLoading: loadingUser } = useQuery({
+    queryKey: ["user"],
+    queryFn: async () => {
+      const res = await api.get("/auth/me");
+      if (!res.ok) throw new Error("Failed to fetch user");
+      return res.json();
     }
-    fetchData();
-  }, []);
+  });
+
+  const { data: summary, isLoading: loadingSummary } = useQuery({
+    queryKey: ["dashboard", "summary"],
+    queryFn: async () => {
+      const res = await api.get("/dashboard/summary");
+      if (!res.ok) throw new Error("Failed to fetch summary");
+      return res.json();
+    }
+  });
+
+  const { data: pipeline, isLoading: loadingPipeline } = useQuery({
+    queryKey: ["dashboard", "pipeline"],
+    queryFn: async () => {
+      const res = await api.get("/dashboard/pipeline");
+      if (!res.ok) throw new Error("Failed to fetch pipeline");
+      return res.json();
+    }
+  });
+
+  const loading = loadingUser || loadingSummary || loadingPipeline;
+  const userName = user?.name ? user.name.split(" ")[0] : "Carregando...";
+  const metrics = summary && pipeline ? { summary, pipeline } : null;
 
   // Cores do funil baseadas no status
   const statusConfig: Record<string, { label: string, color: string, w: string }> = {

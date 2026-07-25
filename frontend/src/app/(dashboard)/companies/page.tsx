@@ -1,6 +1,8 @@
+import { api } from "@/lib/api";
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Plus, Building2, MapPin, Globe, Loader2, MoreVertical, Briefcase } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -20,33 +22,14 @@ interface Company {
 }
 
 export default function CompaniesPage() {
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchCompanies = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      const res = await fetch("http://localhost:8000/api/v1/companies", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-
-      if (res.ok) setCompanies(await res.json());
-    } catch (err) {
-      console.error("Failed to fetch companies", err);
-    } finally {
-      setLoading(false);
+  const { data: companies = [], isLoading: loading } = useQuery<Company[]>({
+    queryKey: ["companies"],
+    queryFn: async () => {
+      const res = await api.get("/companies");
+      if (!res.ok) throw new Error("Failed to fetch companies");
+      return res.json();
     }
-  };
-
-  useEffect(() => {
-    fetchCompanies();
-  }, []);
-
-
-
-  return (
+  });  return (
     <div className="h-full flex flex-col p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>

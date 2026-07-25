@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 import jwt
@@ -7,7 +7,7 @@ from database import get_db
 import models
 import schemas
 import auth
-from auth import oauth2_scheme, SECRET_KEY, ALGORITHM
+from auth import SECRET_KEY, ALGORITHM
 
 router = APIRouter()
 
@@ -28,7 +28,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return new_user
 
 @router.post("/login", response_model=schemas.Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+def login(response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
     if not user or not auth.verify_password(form_data.password, user.password_hash):
         raise HTTPException(
@@ -38,14 +38,45 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         )
     
     access_token = auth.create_access_token(data={"sub": str(user.id)})
+    
+    # Set HttpOnly Cookie
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        samesite="lax",
+        max_age=7 * 24 * 3600, # 7 days
+        secure=False, # True if HTTPS
+    )
+    
+    # Retornamos o token na resposta tambem para suportar Swagger / clients legacy, 
+    # mas o browser usara o cookie.
     return {"access_token": access_token, "token_type": "bearer"}
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+@router.post("/logout")
+def logout(response: Response):
+    response.delete_cookie(key="access_token", httponly=True, samesite="lax")
+    return {"message": "Logged out successfully"}
+
+def get_current_user(request: Request, db: Session = Depends(get_db)):
+    # Tenta pegar o token do cookie primeiro
+    token = request.cookies.get("access_token")
+    
+    # Fallback para o header Authorization
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+            
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail=[{"code": "AUTHENTICATION_REQUIRED", "message": "Could not validate credentials"}],
         headers={"WWW-Authenticate": "Bearer"},
     )
+    
+    if not token:
+        raise credentials_exception
+        
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")

@@ -1,164 +1,62 @@
 # CareerHub - Produto
 
-Este documento concentra contexto de produto: publico-alvo, personas, jornadas, modulos e requisitos. A visao resumida fica em `PROJECT.md`.
+Este documento define os detalhes operacionais, modelagens de domínio e regras de negócio essenciais do CareerHub.
 
-## Proposta de Valor
+## Regra de Ouro: Zero Cartas de Apresentação
+O sistema **NÃO** terá suporte para Cartas de Apresentação (Cover Letters).
+Não haverá upload de cartas, geração de cartas por IA ou associação de cartas às vagas. O foco é otimização de currículos, métricas de conversão e gestão de funil.
 
-CareerHub ajuda profissionais a organizar a carreira em um unico lugar, com foco inicial em oportunidades, candidaturas, curriculos, empresas, certificados e acompanhamento de progresso.
+## Modelagem do Domínio Principal: Vagas (Jobs)
 
-## Publico-Alvo Inicial
+A entidade `Vaga` é o "Centro de Comando" do CareerHub. Ela deve ser robusta o suficiente para suportar Analytics e cruzamento de dados com IA.
 
-Profissionais de tecnologia que:
+### Campos Essenciais
+1. **Dados Estruturais:**
+   - `id` e `user_id`
+   - `company_id` (Opcional, gera histórico com empresas)
+   - `resume_id` (Opcional no início, obrigatório ao aplicar. Essencial para rastrear qual currículo converte mais).
 
-- estao buscando novas oportunidades;
-- aplicam para varias vagas ao mesmo tempo;
-- precisam adaptar curriculos por objetivo;
-- querem acompanhar historico e progresso;
-- querem construir uma base confiavel para futuras analises com IA.
+2. **O Núcleo da Vaga (Preparado para IA):**
+   - `title`: Cargo (Ex: Engenheiro Backend).
+   - `description`: Descritivo completo. Usado pela IA para calcular ATS Match Score.
+   - `url`: Link original da vaga.
+   - `source`: Origem (Ex: LinkedIn, Indicação). Métrica de ouro para saber qual canal funciona.
+   - `seniority`: Estágio, Júnior, Pleno, Sênior, Especialista.
+   - `work_model`: Remoto, Híbrido, Presencial.
+   - `location` e `employment_type` (CLT, PJ).
 
-## Personas
+3. **Dados Financeiros:**
+   - `salary_min`, `salary_max`, `currency`, `benefits` (JSON).
 
-### Lucas - Desenvolvedor em Transicao
+4. **Pipeline e Métricas:**
+   - `status`: BACKLOG, APPLIED, INTERVIEW, OFFER, REJECTED.
+   - `applied_at` e `deadline`.
+   - `rejection_reason`: Motivo da recusa (Ghosting, Falta de Fit, etc). Gera insights de falha.
+   - `ats_match_score`: Nota de aderência calculada por IA.
+   - `notes`.
 
-Lucas e um desenvolvedor pleno buscando oportunidades melhores, possivelmente remotas ou internacionais.
+## Modelagem do Domínio: Currículos (Resumes)
+O currículo não é apenas um arquivo estático. Ele precisa ser rastreável.
+O usuário pode ter N currículos (ex: "CV Frontend" e "CV Fullstack"). Ao vincular um currículo a uma Vaga (`resume_id`), o sistema consegue calcular:
+- Qual currículo gera mais entrevistas.
+- Qual currículo tem a maior taxa de aprovação técnica.
 
-Dores:
+## Módulos do Sistema
 
-- controla candidaturas em planilhas;
-- perde prazos e historico;
-- nao sabe qual curriculo enviou para cada vaga;
-- nao mede taxa de resposta.
+### 1. Dashboard de Analytics
+Deve exibir:
+- Funil de vagas em tempo real.
+- Taxa de conversão (Aplicações -> Entrevistas).
+- Gráfico de origens que mais convertem.
+- Gráfico de motivos de rejeição.
 
-Objetivos:
+### 2. Kanban Board (Vagas)
+Visualização clara do pipeline. Modal de inserção robusto permitindo classificar a vaga profundamente (Senioridade, Origem, Empresa) com rapidez.
 
-- centralizar vagas;
-- acompanhar status no pipeline;
-- manter curriculos organizados;
-- medir progresso.
+### 3. Empresas e Networking
+Repositório das empresas que o usuário mapeou, incluindo anotações de cultura e link do portal de vagas delas.
 
-Prioridade: alta para o MVP.
-
-### Mariana - Desenvolvedora em Evolucao
-
-Mariana e uma profissional junior ou em crescimento que precisa organizar curriculos, certificados, estudos e portfolio.
-
-Dores:
-
-- certificados espalhados;
-- projetos sem curadoria;
-- falta clareza sobre evolucao profissional;
-- dificuldade para priorizar estudos.
-
-Objetivos:
-
-- organizar perfil profissional;
-- manter certificados e projetos;
-- futuramente receber sugestoes de desenvolvimento.
-
-Prioridade: media. Parte do perfil entra no MVP; estudos entram depois.
-
-### Rafael - Profissional Focado em Concursos
-
-Rafael organiza editais, cronogramas, disciplinas e estudos para concursos de tecnologia.
-
-Dores:
-
-- editais e prazos dispersos;
-- planejamento manual;
-- baixa visibilidade de progresso por disciplina.
-
-Objetivos:
-
-- centralizar concursos;
-- montar plano de estudos;
-- acompanhar simulados e desempenho.
-
-Prioridade: baixa para o MVP. Deve ficar no roadmap futuro.
-
-## Modulos de Produto
-
-### Oportunidades
-
-Inclui empresas, vagas, candidaturas, status, notas, checklist, prazos e entrevistas.
-
-Requisitos iniciais:
-
-- criar, editar, listar e excluir empresas;
-- criar, editar, listar e excluir vagas;
-- associar vaga a empresa;
-- controlar status da candidatura;
-- registrar notas e checklist;
-- visualizar pipeline.
-
-### Perfil Profissional
-
-Inclui curriculos, certificados, projetos, habilidades e experiencias.
-
-Requisitos iniciais:
-
-- criar, editar, listar e excluir curriculos;
-- criar, editar, listar e excluir certificados;
-- registrar metadados basicos de certificados.
-
-Futuro:
-
-- projetos;
-- habilidades;
-- versionamento;
-- exportacao;
-- anexos;
-- sugestoes com IA.
-
-### Dashboard
-
-Inclui indicadores operacionais do usuario.
-
-Requisitos iniciais:
-
-- total de vagas;
-- candidaturas por status;
-- proximos prazos;
-- entrevistas agendadas quando o modulo existir;
-- atividades recentes.
-
-### Inteligencia de Carreira
-
-Inclui ATS, comparacao vaga-curriculo, cartas, respostas para plataformas e simulacao de entrevistas.
-
-Nao entra no MVP. Deve depender de dados bem modelados em vagas, curriculos e perfil.
-
-### Desenvolvimento Profissional
-
-Inclui estudos, networking, concursos, metas e roadmaps.
-
-Nao entra no MVP. Deve ser desenhado depois de validar o core de oportunidades.
-
-## Jornada Principal do MVP
-
-1. Usuario cria conta.
-2. Usuario cadastra empresas relevantes.
-3. Usuario cadastra vagas.
-4. Usuario move vagas pelo pipeline de candidatura.
-5. Usuario registra notas, checklist e prazos.
-6. Usuario cadastra curriculos e certificados.
-7. Usuario acompanha progresso no dashboard.
-
-## Fora do Escopo Inicial
-
-- IA generativa.
-- ATS automatico.
-- Importacao por URL.
-- Integracoes externas.
-- Estudos e concursos.
-- Networking avancado.
-- App mobile.
-- Marketplace.
-- API publica.
-
-## Criterios de Sucesso do MVP
-
-- O usuario consegue abandonar uma planilha simples de candidaturas.
-- O funil de vagas fica claro.
-- O usuario consegue saber qual oportunidade exige qual proximo passo.
-- Curriculos e certificados ficam organizados.
-- O dashboard ajuda a decidir o que fazer em seguida.
+## Criterios de Sucesso do Produto
+- O usuário percebe o CareerHub não como uma planilha gourmet, mas como um "Assessor de Carreira".
+- O sistema consegue sugerir mudanças de rota (ex: "Você está sendo reprovado para vagas Sênior, tente aplicar para vagas Pleno onde seu ATS Score médio é 90%").
+- O design UI/UX impressiona desde o primeiro clique.

@@ -1,142 +1,42 @@
 # CareerHub - Roadmap
 
-Este documento detalha fases, prioridades e criterios de aceite. O resumo estrategico fica em `PROJECT.md`.
+Este documento detalha o plano de evolução do CareerHub como um produto completo de analytics e gestão de carreira.
 
-## Principios de Priorizacao
+## Fase 1 - O Motor Principal (Core Product)
+Objetivo: Implementar o centro de comando funcional com toda a modelagem de dados avançada.
 
-- Validar o fluxo principal antes de automacoes.
-- Entregar valor operacional antes de inteligencia avancada.
-- Evitar dependencias externas no MVP.
-- Expandir somente depois que os dados centrais estiverem confiaveis.
+**Entregas:**
+- Autenticação e Segurança.
+- Modais e Listagens de Vagas (Kanban) suportando todos os campos complexos (Source, Seniority, Work Model).
+- Gestão de Empresas.
+- Gestão de Currículos e Certificados.
+- Dashboard de métricas operacionais (Funil, Taxa de Conversão básica).
+- Integração do relacionamento `Vaga -> Currículo`.
 
-## Fase 0 - Fundacao
+## Fase 2 - Analytics Profundo
+Objetivo: Dar sentido aos dados ricos capturados na Fase 1.
 
-Objetivo: preparar base documental e tecnica.
+**Entregas:**
+- Painel de Analytics detalhado:
+  - Gráficos de performance de Currículos.
+  - Relatório de Origens (Source) mais efetivas.
+  - Análise de Motivos de Rejeição (Rejection Reasons).
+- Módulo de Entrevistas (Interviews), permitindo linkar anotações técnicas a cada vaga.
+- Alertas e Notificações (Prazos de aplicação e acompanhamento de "Ghosting").
 
-Entregas:
+## Fase 3 - Inteligência Artificial (ATS e Fit)
+Objetivo: Automatizar a leitura e sugerir melhorias.
 
-- documentacao central;
-- arquitetura da documentacao;
-- regras para agentes;
-- regras obrigatorias;
-- decisao de stack;
-- scaffold inicial;
-- ambiente local;
-- padroes de qualidade.
+**Entregas:**
+- `ATS Match Score`: Um processo de fundo que pega a `description` da Vaga, lê o texto do `resume_id` associado, e devolve uma nota de 0 a 100 de match.
+- Sugestões de palavras-chave faltantes no currículo para aquela vaga específica.
+- Geração de planos de estudo baseados nos motivos de rejeição (ex: "Foi rejeitado em 3 vagas por falta de testes automatizados. Sugestão: Curso de Jest").
+*(Nota: Nenhuma IA deve gerar ou analisar Cartas de Apresentação).*
 
-Criterios de aceite:
+## Fase 4 - Ecossistema Expandido
+Objetivo: Integrar a vida do usuário.
 
-- documentos base existem e nao duplicam responsabilidades;
-- stack inicial foi decidida;
-- README contem comandos reais assim que houver scaffold;
-- agentes sabem onde buscar contexto.
-
-## Fase 1 - MVP
-
-Objetivo: substituir planilhas e arquivos soltos por um fluxo centralizado.
-
-Entregas:
-
-- autenticacao basica;
-- empresas;
-- vagas;
-- pipeline de candidatura;
-- notas e checklist;
-- curriculos;
-- certificados;
-- dashboard operacional;
-- responsividade basica.
-
-Criterios de aceite:
-
-- usuario cria conta e acessa area privada;
-- usuario cadastra empresas;
-- usuario cadastra vagas;
-- usuario altera status de candidaturas;
-- usuario registra notas e checklist por vaga;
-- usuario cadastra curriculos;
-- usuario cadastra certificados;
-- dashboard mostra KPIs basicos.
-
-## Fase 2 - Produto Util
-
-Objetivo: melhorar o uso diario do produto.
-
-Possiveis entregas:
-
-- entrevistas;
-- anexos em vagas e certificados;
-- timeline de candidatura;
-- filtros e busca;
-- exportacao simples de curriculos;
-- tags;
-- lembretes simples;
-- melhorias de UX.
-
-Criterios de aceite:
-
-- usuario consegue rastrear historico completo de uma candidatura;
-- documentos importantes ficam associados ao contexto correto;
-- o produto reduz retrabalho de acompanhamento.
-
-## Fase 3 - Inteligencia
-
-Objetivo: usar os dados acumulados para apoiar decisoes.
-
-Possiveis entregas:
-
-- analise de aderencia vaga-curriculo;
-- score ATS;
-- sugestoes de melhoria;
-- geracao assistida de carta;
-- simulacao de entrevista;
-- providers de IA configuraveis;
-- controle de custo e limites.
-
-Criterios de aceite:
-
-- IA e opcional;
-- dados sensiveis sao protegidos;
-- sugestoes sao rastreaveis e revisaveis pelo usuario;
-- providers podem ser trocados sem alterar regras de produto.
-
-## Fase 4 - Expansao
-
-Objetivo: ampliar o ecossistema de carreira.
-
-Possiveis entregas:
-
-- estudos;
-- concursos;
-- networking;
-- integracao GitHub;
-- integracao LinkedIn;
-- importacao de vagas;
-- API publica;
-- mobile ou PWA avancado;
-- automacoes.
-
-Criterios de aceite:
-
-- expansoes nao quebram o core;
-- modulos novos usam os mesmos principios de dominio;
-- integracoes sao opcionais e isoladas.
-
-## Decisoes Pendentes
-
-- Ordem exata das features do MVP.
-- Nivel de detalhe do dashboard inicial.
-- Estrategia de anexos no MVP.
-- Autenticacao local ou provider externo.
-- Detalhes do scaffold inicial.
-
-## Itens Rejeitados para o MVP
-
-- Microservices.
-- CQRS completo.
-- Event sourcing.
-- IA obrigatoria.
-- App mobile nativo.
-- Marketplace.
-- API publica.
-- Integracoes externas obrigatorias.
+**Entregas:**
+- Extensão de navegador para importar vagas direto do LinkedIn e Gupy com um clique.
+- Exportação avançada de Currículos gerados dinamicamente em PDF, baseados em templates de alta conversão.
+- Integração de agenda (Google Calendar) para entrevistas.

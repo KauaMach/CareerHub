@@ -1,0 +1,122 @@
+# CareerHub - Git ignore rules
+
+# Reference material kept outside version control
+Arq/
+Referencia - Central de Carreira - Projeto Antigo/
+Referencia - Curriculos/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.local
+*.secret
+*.pem
+*.key
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.example.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Node / frontend
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+.turbo/
+.vercel/
+.parcel-cache/
+.eslintcache
+*.tsbuildinfo
+
+# Python / backend
+__pycache__/
+*.py[cod]
+*$py.class
+.python-version
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyre/
+.tox/
+.nox/
+.coverage
+htmlcov/
+site/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Package manager caches
+.npm/
+.pnpm-store/
+.yarn/
+!.yarn/releases/
+!.yarn/plugins/
+!.yarn/sdks/
+!.yarn/versions/
+
+# Docker and local runtime data
+docker-data/
+.docker/
+tmp/
+temp/
+.cache/
+
+# Database and storage artifacts
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.sql.gz
+uploads/
+storage/
+minio-data/
+postgres-data/
+redis-data/
+
+# Generated documents and LaTeX artifacts
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.lot
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+
+# Test and automation artifacts
+playwright-report/
+test-results/
+.nyc_output/
+
+# Misc generated files
+*.bak
+*.tmp
+*.orig
